@@ -1,0 +1,47 @@
+name: Deploy static site to S3
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      REPO_SAFE: ${{ github.event.repository.name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set bucket name
+        run: |
+          BUCKET_NAME="${{ github.repository_owner }}-${REPO_SAFE}-static"
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+          echo "Generated bucket: $BUCKET_NAME"
+
+      - name: Check if bucket exists
+        id: check_bucket
+        run: |
+          if aws s3 ls "s3://$BUCKET_NAME" 2>&1 | grep -q 'NoSuchBucket'; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "exists=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create bucket if not exists
+        if: steps.check_bucket.outputs.exists == 'false'
+        run: |
+          aws s3 mb "s3://$BUCKET_NAME"
+          aws s3 website "s3://$BUCKET_NAME" --index-document index.html --error-document error.html
+          echo "Bucket created and configured for static website hosting."
+
+      - name: Upload site to S3
+        run: |
+          aws s3 sync ./dist "s3://$BUCKET_NAME" --delete
+          echo "Site deployed successfully to S3 bucket: $BUCKET_NAME"
+
+      - name: Display website URL
+        run: |
+          echo "Your static site is available at: http://$BUCKET_NAME.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
