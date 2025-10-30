@@ -7,24 +7,28 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to Amazon S3
     runs-on: ubuntu-latest
+
     env:
-      REPO_SAFE: ${{ github.event.repository.name }}
-    
+      AWS_REGION: us-east-1 # Change this if needed
+      BUCKET_NAME: my-awesome-static-site-bucket # <-- Your chosen S3 bucket name
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set bucket name
-        run: |
-          BUCKET_NAME="${{ github.repository_owner }}-${REPO_SAFE}-static"
-          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
-          echo "Generated bucket: $BUCKET_NAME"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Check if bucket exists
         id: check_bucket
         run: |
-          if aws s3 ls "s3://$BUCKET_NAME" 2>&1 | grep -q 'NoSuchBucket'; then
+          if aws s3 ls "s3://${{ env.BUCKET_NAME }}" 2>&1 | grep -q 'NoSuchBucket'; then
             echo "exists=false" >> $GITHUB_OUTPUT
           else
             echo "exists=true" >> $GITHUB_OUTPUT
@@ -33,15 +37,16 @@ jobs:
       - name: Create bucket if not exists
         if: steps.check_bucket.outputs.exists == 'false'
         run: |
-          aws s3 mb "s3://$BUCKET_NAME"
-          aws s3 website "s3://$BUCKET_NAME" --index-document index.html --error-document error.html
+          aws s3 mb "s3://${{ env.BUCKET_NAME }}"
+          aws s3 website "s3://${{ env.BUCKET_NAME }}" --index-document index.html --error-document error.html
           echo "Bucket created and configured for static website hosting."
 
-      - name: Upload site to S3
+      - name: Upload static site to S3
         run: |
-          aws s3 sync ./dist "s3://$BUCKET_NAME" --delete
-          echo "Site deployed successfully to S3 bucket: $BUCKET_NAME"
+          aws s3 sync ./dist "s3://${{ env.BUCKET_NAME }}" --delete
+          echo "Static site deployed successfully to S3 bucket: ${{ env.BUCKET_NAME }}"
 
       - name: Display website URL
         run: |
-          echo "Your static site is available at: http://$BUCKET_NAME.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo "Your static site is available at:"
+          echo "http://${{ env.BUCKET_NAME }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
