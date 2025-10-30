@@ -7,17 +7,20 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Amazon S3
+    name: Build and Deploy to Amazon S3
     runs-on: ubuntu-latest
 
     env:
-      AWS_REGION: us-east-1 # Change this if needed
-      BUCKET_NAME: my-awesome-static-site-bucket # <-- Your chosen S3 bucket name
+      AWS_REGION: us-east-1            # Change to your region if needed
+      BUCKET_NAME: elv-s3-site  # 🔹 Replace with your bucket name
+      BUILD_DIR: dist                  # Change to 'build' if using React, etc.
 
     steps:
+      # 🧾 Step 1: Checkout your source code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 🔐 Step 2: Authenticate with AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -25,6 +28,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # 📦 Step 3: Install project dependencies
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      # ⚙️ Step 4: Build your static site
+      - name: Build static site
+        run: |
+          npm run build
+
+      # 🔍 Step 5: Verify that the build folder exists
+      - name: Verify build output
+        run: |
+          if [ -d "./${{ env.BUILD_DIR }}" ]; then
+            echo "✅ Build folder '${{ env.BUILD_DIR }}' found."
+          else
+            echo "❌ Build folder '${{ env.BUILD_DIR }}' not found. Check your build command or folder name."
+            exit 1
+          fi
+
+      # 🪣 Step 6: Check if S3 bucket exists
       - name: Check if bucket exists
         id: check_bucket
         run: |
@@ -34,19 +62,22 @@ jobs:
             echo "exists=true" >> $GITHUB_OUTPUT
           fi
 
+      # 🧺 Step 7: Create the bucket if it doesn't exist
       - name: Create bucket if not exists
         if: steps.check_bucket.outputs.exists == 'false'
         run: |
           aws s3 mb "s3://${{ env.BUCKET_NAME }}"
           aws s3 website "s3://${{ env.BUCKET_NAME }}" --index-document index.html --error-document error.html
-          echo "Bucket created and configured for static website hosting."
+          echo "✅ S3 bucket '${{ env.BUCKET_NAME }}' created and configured for static website hosting."
 
+      # 🚀 Step 8: Deploy the site to S3
       - name: Upload static site to S3
         run: |
-          aws s3 sync ./dist "s3://${{ env.BUCKET_NAME }}" --delete
-          echo "Static site deployed successfully to S3 bucket: ${{ env.BUCKET_NAME }}"
+          aws s3 sync "./${{ env.BUILD_DIR }}" "s3://${{ env.BUCKET_NAME }}" --delete
+          echo "✅ Static site deployed successfully to S3 bucket: ${{ env.BUCKET_NAME }}"
 
+      # 🌐 Step 9: Display the website URL
       - name: Display website URL
         run: |
-          echo "Your static site is available at:"
+          echo "🌍 Your static site is available at:"
           echo "http://${{ env.BUCKET_NAME }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
