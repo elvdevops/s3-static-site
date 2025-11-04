@@ -1,0 +1,269 @@
+:root {
+  --primary: #2563eb;
+  --dark-bg: #0f172a;
+  --light-bg: #f9fafb;
+  --text-dark: #1e293b;
+  --text-light: #e2e8f0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  color: var(--text-dark);
+  background-color: var(--light-bg);
+  transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+  background-color: var(--dark-bg);
+  color: var(--text-light);
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 2rem;
+  background: var(--primary);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 1.5rem;
+  position: relative;
+}
+
+.logo::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 3px;
+  background: white;
+  bottom: -4px;
+  left: 0;
+  border-radius: 2px;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  margin: 0 1rem;
+  position: relative;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  width: 0%;
+  height: 2px;
+  background: white;
+  left: 0;
+  bottom: -4px;
+  transition: 0.3s;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3rem 2rem;
+}
+
+.hero-text {
+  flex: 1;
+  min-width: 280px;
+  padding-right: 2rem;
+}
+
+.hero-image {
+  flex: 1;
+  text-align: center;
+}
+
+.hero-image img {
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.cta-btn {
+  margin-top: 1rem;
+  padding: 0.8rem 1.6rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.cta-btn:hover {
+  background: #1e40af;
+}
+
+.section {
+  padding: 4rem 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.section h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.section h2::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: var(--primary);
+  margin: 0.5rem auto;
+  border-radius: 3px;
+}
+
+.service-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.service-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  max-width: 280px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+body.dark .service-card {
+  background: #1e293b;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.carousel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.member {
+  opacity: 0.4;
+  transition: opacity 0.5s, transform 0.5s;
+  text-align: center;
+}
+
+.member.active {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.member img {
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+}
+
+/* Make each team member animate when hovered */
+.member:hover {
+  opacity: 1;
+  transform: scale(1.15) rotate(2deg);
+  transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.3s ease;
+  /*box-shadow: 0 6px 20px rgba(0,0,0,0.15);*/
+}
+
+/* Add a little pseudo-element accent for hover effect */
+.member:hover::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 3px;
+  animation: glow 1s ease infinite alternate;
+}
+
+/* Animate the accent bar glow */
+@keyframes glow {
+  from { opacity: 0.3; width: 40%; }
+  to { opacity: 1; width: 60%; }
+}
+
+/* Ensure positioning context for the pseudo-element */
+.member {
+  position: relative;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+form input, form textarea {
+  margin: 0.5rem 0;
+  padding: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+form button {
+  margin-top: 1rem;
+  background: var(--primary);
+  color: white;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+form button:hover {
+  background: #1e40af;
+}
+
+footer {
+  background: var(--primary);
+  color: white;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero {
+    flex-direction: column;
+  }
+  .nav-links {
+    display: none;
+  }
+  #themeToggle {
+    font-size: 1.4rem;
+  }
+}
