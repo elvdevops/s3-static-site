@@ -12,7 +12,7 @@ jobs:
 
     env:
       AWS_REGION: us-east-1           # Change if your bucket is in another region
-      S3_BUCKET: elv-static-web    # Replace with your actual bucket name
+      S3_BUCKET: elv-static-web       # Your S3 bucket name
 
     steps:
       # 1️⃣ Checkout repository code
@@ -20,7 +20,6 @@ jobs:
         uses: actions/checkout@v4
 
       # 2️⃣ Configure AWS credentials
-      # These must be stored in your repo's Settings → Secrets → Actions
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,7 +27,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3️⃣ Sync website files to S3
+      # 3️⃣ Check if S3 bucket exists, create if it doesn't
+      - name: Check or create S3 bucket
+        run: |
+          if ! aws s3 ls "s3://${{ env.S3_BUCKET }}" 2>&1 | grep -q "${{ env.S3_BUCKET }}"; then
+            echo "🪣 Bucket does not exist. Creating..."
+            aws s3 mb "s3://${{ env.S3_BUCKET }}" --region "${{ env.AWS_REGION }}"
+            aws s3 website "s3://${{ env.S3_BUCKET }}" \
+              --index-document index.html \
+              --error-document index.html
+            echo "✅ Bucket created and configured for static website hosting."
+          else
+            echo "🪣 Bucket already exists. Skipping creation."
+          fi
+
+      # 4️⃣ Upload website files to S3
       - name: Upload website files to S3
         run: |
           aws s3 sync ./public "s3://${{ env.S3_BUCKET }}" \
@@ -37,8 +50,8 @@ jobs:
             --delete
           echo "✅ Website deployed successfully to ${{ env.S3_BUCKET }}"
 
-      # 4️⃣ Display public website URL
+      # 5️⃣ Display public website URL
       - name: Show website URL
         run: |
           echo "🌐 Your static site is available at:"
-          echo "http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"  
+          echo "http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
