@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      AWS_REGION: us-east-1            # Change if your bucket is in another region
-      S3_BUCKET: elv-static-web        # Your S3 bucket name
+      AWS_REGION: us-east-1
+      S3_BUCKET: elv-static-web
 
     steps:
       # 1️⃣ Checkout repository code
@@ -27,7 +27,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3️⃣ Check if bucket exists and create if needed
+      # 3️⃣ Check or create S3 bucket
       - name: Check or create S3 bucket
         run: |
           if ! aws s3 ls "s3://${{ env.S3_BUCKET }}" 2>&1 | grep -q "${{ env.S3_BUCKET }}"; then
@@ -73,15 +73,14 @@ jobs:
             --policy file://bucket-policy.json
           echo "✅ Bucket policy applied successfully."
 
-      # 5️⃣ Upload website files to S3
+      # 5️⃣ Upload website files to S3 (no ACLs)
       - name: Upload website files to S3
         run: |
           echo "🚀 Uploading site files..."
           aws s3 sync ./public "s3://${{ env.S3_BUCKET }}" \
             --exclude ".git/*" \
             --exclude ".github/*" \
-            --delete \
-            --acl public-read
+            --delete
           echo "✅ Website deployed successfully to ${{ env.S3_BUCKET }}"
 
       # 6️⃣ Display public website URL
