@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      AWS_REGION: us-east-1           # Change if your bucket is in another region
-      S3_BUCKET: elv-static-web       # Your S3 bucket name
+      AWS_REGION: us-east-1            # Change if your bucket is in another region
+      S3_BUCKET: elv-static-web        # Your S3 bucket name
 
     steps:
       # 1️⃣ Checkout repository code
@@ -27,30 +27,64 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3️⃣ Check if S3 bucket exists, create if it doesn't
+      # 3️⃣ Check if bucket exists and create if needed
       - name: Check or create S3 bucket
         run: |
           if ! aws s3 ls "s3://${{ env.S3_BUCKET }}" 2>&1 | grep -q "${{ env.S3_BUCKET }}"; then
             echo "🪣 Bucket does not exist. Creating..."
             aws s3 mb "s3://${{ env.S3_BUCKET }}" --region "${{ env.AWS_REGION }}"
+
+            echo "🔧 Disabling public access block..."
+            aws s3api put-public-access-block \
+              --bucket "${{ env.S3_BUCKET }}" \
+              --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+
+            echo "🌐 Configuring bucket for static website hosting..."
             aws s3 website "s3://${{ env.S3_BUCKET }}" \
               --index-document index.html \
               --error-document index.html
-            echo "✅ Bucket created and configured for static website hosting."
+
+            echo "✅ Bucket created and configured."
           else
             echo "🪣 Bucket already exists. Skipping creation."
           fi
 
-      # 4️⃣ Upload website files to S3
+      # 4️⃣ Apply public-read bucket policy
+      - name: Make bucket public
+        run: |
+          cat > bucket-policy.json <<EOF
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::${{ env.S3_BUCKET }}/*"
+              }
+            ]
+          }
+          EOF
+
+          echo "📜 Applying public-read policy..."
+          aws s3api put-bucket-policy \
+            --bucket "${{ env.S3_BUCKET }}" \
+            --policy file://bucket-policy.json
+          echo "✅ Bucket policy applied successfully."
+
+      # 5️⃣ Upload website files to S3
       - name: Upload website files to S3
         run: |
+          echo "🚀 Uploading site files..."
           aws s3 sync ./public "s3://${{ env.S3_BUCKET }}" \
             --exclude ".git/*" \
             --exclude ".github/*" \
-            --delete
+            --delete \
+            --acl public-read
           echo "✅ Website deployed successfully to ${{ env.S3_BUCKET }}"
 
-      # 5️⃣ Display public website URL
+      # 6️⃣ Display public website URL
       - name: Show website URL
         run: |
           echo "🌐 Your static site is available at:"
